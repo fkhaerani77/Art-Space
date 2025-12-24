@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Art Space</string>
+    <string name="tittle1">The Scream</string>
+    <string name="artist1">Edvard Munch</string>
+    <string name="year1">(1893)</string>
+    <string name="tittle2">Mona Lisa</string>
+    <string name="artist2">Leonardo Da Vinci</string>
+    <string name="year2">(1503-1519)</string>
+    <string name="tittle3">Girl with a Pearl Earring</string>
+    <string name="artist3">Johannes Vermeer</string>
+    <string name="year3">(1665)</string>
+    <string name="tittle4">The Arnolfini Portrait</string>
+    <string name="artist4">Jan van Eyck</string>
+    <string name="year4">(1434)</string>
+</resources>
