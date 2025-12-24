@@ -81,9 +81,8 @@ fun ArtSpaceApp() {
                 )
             }
         }
-    ) { targetStep -> // <--- PENTING: Gunakan variabel 'targetStep' ini di dalam
+    ) { targetStep ->
 
-        // --- PINDAHKAN LOGIKA DATA KE SINI (DI DALAM ANIMATED CONTENT) ---
         val imageResource: Int
         val title: String
         val artist: String
@@ -91,7 +90,6 @@ fun ArtSpaceApp() {
         val genre: String
         val description: String
 
-        // Gunakan 'targetStep' (bukan currentStep) untuk menentukan gambar
         when (targetStep) {
             1 -> {
                 imageResource = R.drawable._00px_the_scream
@@ -135,7 +133,7 @@ fun ArtSpaceApp() {
             }
         }
 
-        // TAMPILKAN UI (DI DALAM ANIMATED CONTENT)
+        // TAMPILKAN UI 
         ArtStatis(
             imageRes = imageResource,
             tittle1 = title,
