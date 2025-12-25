@@ -15,6 +15,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,12 +27,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +48,8 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -51,60 +57,127 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.artspace.ui.theme.ArtSpaceTheme
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ArtSpaceTheme {
-                    ArtSpaceApp()
+            ArtSpaceTheme (
+                dynamicColor = false
+            ){
+                Surface (
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ){
+                    var showSplashScreen by remember { mutableStateOf(true) }
+
+                    LaunchedEffect(Unit) {
+                        delay(2000)
+                        showSplashScreen = false
+                    }
+
+                    if (showSplashScreen){
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.background),
+                            contentAlignment = Alignment.Center
+                        ){
+                            Column {
+                                Text(
+                                    "ART SPACE",
+                                    fontSize = 40.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    "by Ranize",
+                                    fontSize = 16.sp,
+                                    modifier = Modifier
+                                        .padding(top = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                    else {
+                        ArtSpaceApp()
+                    }
+
+                }
             }
         }
     }
 }
 
+data class ArtWork(
+    val id: Int,
+    val imageRes: Int,
+    val titleRes: Int,
+    val artistRest: Int,
+    val yearRes: Int,
+    val genreRes: Int,
+    val descriptionRes: Int,
+    val artistBioRes: Int
+)
+
 @Composable
 fun ArtSpaceApp() {
+    val artworks = remember {
+        listOf(
+            ArtWork(
+                1,
+                R.drawable._00px_the_scream,
+                R.string.tittle1,
+                R.string.artist1,
+                R.string.year1,
+                R.string.genre1,
+                R.string.description1,
+                R.string.artistBio1
+            ),
+            ArtWork(
+                2,
+                R.drawable.mona_lisa,
+                R.string.tittle2,
+                R.string.artist2,
+                R.string.year2,
+                R.string.genre2,
+                R.string.description2,
+                R.string.artistBio2
+            ),
+            ArtWork(
+                3,
+                R.drawable.girl_with_a_pearl_earring,
+                R.string.tittle3,
+                R.string.artist3,
+                R.string.year3,
+                R.string.genre3,
+                R.string.description3,
+                R.string.artistBio3
+            ),
+            ArtWork(
+                4,
+                R.drawable.the_arnolfini_portrait,
+                R.string.tittle4,
+                R.string.artist4,
+                R.string.year4,
+                R.string.genre4,
+                R.string.description4,
+                R.string.artistBio4
+            )
+        )
+    }
     var currentStep by remember { mutableIntStateOf(1) }
 
     var isSHowingArtistProfile by remember { mutableStateOf(false) }
 
+    val currentAtWork = artworks[currentStep - 1]
     //Menampilkan Biografi Pelukis
     if (isSHowingArtistProfile) {
-        val artistName: String
-        val artistBio: String
-
-        when (currentStep) {
-            1 -> {
-                artistName = stringResource(R.string.artist1)
-                artistBio = stringResource(R.string.artistBio1)
-            }
-
-            2 -> {
-                artistName = stringResource(R.string.artist2)
-                artistBio = stringResource(R.string.artistBio2)
-            }
-
-            3 -> {
-                artistName = stringResource(R.string.artist3)
-                artistBio = stringResource(R.string.artistBio3)
-            }
-
-            4 -> {
-                artistName = stringResource(R.string.artist4)
-                artistBio = stringResource(R.string.artistBio4)
-            }
-
-            else -> {
-                artistName = "Unknown"
-                artistBio = "Unknown"
-            }
-        }
 
         ArtistProfileScreen(
-            artistName1 = artistName,
-            artistBio1 = artistBio,
+            artistName1 = stringResource(currentAtWork.artistRest),
+            artistBio1 = stringResource(currentAtWork.artistBioRes),
             onBackClick = { isSHowingArtistProfile = false }
         )
     } else {
@@ -125,63 +198,15 @@ fun ArtSpaceApp() {
                 }
             }
         ){ targetStep ->
-            val imageResource: Int
-            val title: String
-            val artist: String
-            val year: String
-            val genre: String
-            val description: String
-
-            when (targetStep) {
-                1 -> {
-                    imageResource = R.drawable._00px_the_scream
-                    title = stringResource(R.string.tittle1)
-                    artist = stringResource(R.string.artist1)
-                    year = stringResource(R.string.year1)
-                    genre = stringResource(R.string.genre1)
-                    description = stringResource(R.string.description1)
-                }
-                2 -> {
-                    imageResource = R.drawable.mona_lisa
-                    title = stringResource(R.string.tittle2)
-                    artist = stringResource(R.string.artist2)
-                    year = stringResource(R.string.year2)
-                    genre = stringResource(R.string.genre2)
-                    description = stringResource(R.string.description2)
-                }
-                3 -> {
-                    imageResource = R.drawable.girl_with_a_pearl_earring
-                    title = stringResource(R.string.tittle3)
-                    artist = stringResource(R.string.artist3)
-                    year = stringResource(R.string.year3)
-                    genre = stringResource(R.string.genre3)
-                    description = stringResource(R.string.description3)
-                }
-                4 -> {
-                    imageResource = R.drawable.the_arnolfini_portrait
-                    title = stringResource(R.string.tittle4)
-                    artist = stringResource(R.string.artist4)
-                    year = stringResource(R.string.year4)
-                    genre = stringResource(R.string.genre4)
-                    description = stringResource(R.string.description4)
-                }
-                else -> {
-                    imageResource = R.drawable._00px_the_scream
-                    title = "Unknown"
-                    artist = "Unknown"
-                    year = "Unknown"
-                    genre = "Unknown"
-                    description = "Unknown"
-                }
-            }
+            val targetArtwork = artworks[targetStep - 1]
 
             ArtStatis(
-                imageRes = imageResource,
-                tittle1 = title,
-                artist1 = artist,
-                year1 = year,
-                genre1 = genre,
-                description1 = description,
+                imageRes = targetArtwork.imageRes,
+                tittle1 = stringResource(targetArtwork.titleRes),
+                artist1 = stringResource(targetArtwork.artistRest),
+                year1 = stringResource(targetArtwork.yearRes),
+                genre1 = stringResource(targetArtwork.genreRes),
+                description1 = stringResource(targetArtwork.descriptionRes),
                 onPrevClick = {
                     if (currentStep == 1) {
                         currentStep = 4
@@ -228,18 +253,28 @@ fun ArtStatis(
         ) {
             Surface(
                 shadowElevation = 10.dp,
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
                     .padding(end = 16.dp),
-                color = Color.White
+                color = MaterialTheme.colorScheme.surface
             ) {
-                Image(
-                    painter = painterResource(imageRes),
-                    contentDescription = tittle1,
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().padding(16.dp)
-                )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ){
+                    Image(
+                        painter = painterResource(imageRes),
+                        contentDescription = tittle1,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxSize()
+                    )
+                }
+
             }
             Column(
                 modifier = Modifier
@@ -251,18 +286,25 @@ fun ArtStatis(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFFE6EAEB))
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(12.dp)
+                        )
                         .padding(16.dp)
                 ) {
-                    Text(text = tittle1, fontSize = 22.sp, fontWeight = FontWeight.W300)
+                    val customFont = FontFamily(Font(R.font.cinzel_black))
+
+                    Text(text = tittle1,
+                        fontSize = 22.sp,
+                        fontFamily = customFont,
+                        fontWeight = FontWeight.W300)
                     Text(text = genre1, fontSize = 14.sp, fontStyle = FontStyle.Italic, color = Color.Gray)
                     Row {
                         Text(
                             text = artist1,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
-                            color = Color(0xFF495D92),
-                            // KLIK DISINI
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.clickable { onArtistCLick() }
                         )
                         Text(text = " $year1", fontSize = 16.sp, fontWeight = FontWeight.Thin)
@@ -279,13 +321,17 @@ fun ArtStatis(
                 ) {
                     Button(
                         onClick = onPrevClick,
-                        modifier = Modifier.weight(1f).padding(end = 8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF495D92))
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) { Text("Prev") }
                     Button(
                         onClick = onNextClick,
-                        modifier = Modifier.weight(1f).padding(start = 8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF495D92))
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) { Text("Next") }
                 }
             }
@@ -301,6 +347,7 @@ fun ArtStatis(
         ) {
             Surface(
                 shadowElevation = 10.dp,
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.padding(16.dp),
                 color = Color.White
             ) {
@@ -311,7 +358,7 @@ fun ArtStatis(
                     modifier = Modifier // Gunakan Modifier (Baru)
                         .fillMaxWidth()
                         .height(400.dp)
-                        .background(Color.White)
+                        .background(MaterialTheme.colorScheme.surface)
                         .padding(24.dp)
                 )
             }
@@ -322,16 +369,21 @@ fun ArtStatis(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .background(Color(0xFFE6EAEB))
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(12.dp)
+                    )
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.Start
             ) {
+                val customFont = FontFamily(Font(R.font.cinzel_black))
                 Text(
                     text = tittle1,
+                    fontFamily = customFont,
                     fontSize = 22.sp,
-                    fontWeight = FontWeight.W200,
+                    fontWeight = FontWeight.W200
                 )
                 Text(
                     text = genre1,
@@ -346,7 +398,7 @@ fun ArtStatis(
                         text = artist1,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = Color(0xFF495D92),
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.clickable{onArtistCLick()}
                     )
                     Text(
@@ -362,7 +414,8 @@ fun ArtStatis(
                     text = description1,
                     fontSize = 14.sp,
                     lineHeight = 20.sp,
-                    textAlign = TextAlign.Justify
+                    textAlign = TextAlign.Justify,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -375,14 +428,14 @@ fun ArtStatis(
                 Button(
                     onClick = onPrevClick,
                     modifier = Modifier.width(150.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF495D92))
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Text("Previous")
                 }
                 Button(
                     onClick = onNextClick,
                     modifier = Modifier.width(150.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF495D92))
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Text("Next")
                 }
@@ -428,7 +481,7 @@ fun ArtistProfileScreen (
         Column (
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFFE6EAEB))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .padding(20.dp)
         ){
             Text(
@@ -456,7 +509,7 @@ fun ArtistProfileScreen (
 
         Button(
             onClick = onBackClick,
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF495D92))
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
             Text("Kembali ke Lukisan")
         }
@@ -482,3 +535,4 @@ fun ArtSpacePreview() {
         )
     }
 }
+

@@ -9,3 +9,12 @@ val Pink80 = Color(0xFFEFB8C8)
 val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
+
+//Warna custom
+val ArtBlueLight = Color(0xFF495D92)
+val ArtBlueDark = Color(0xFF8CA4D8)
+val InfoBoxLight = Color(0xFFE6EAEB)
+val InfoBoxDark = Color(0xFF35383F)
+val TextInfoLight = Color(0xFF000000)
+val TextInfoDark = Color(0xFFFFFFFF)
+
