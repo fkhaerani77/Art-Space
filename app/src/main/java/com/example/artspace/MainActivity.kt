@@ -1,7 +1,9 @@
 package com.example.artspace
 
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
+import android.speech.tts.TextToSpeech
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -14,6 +16,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,27 +28,44 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
@@ -168,61 +188,124 @@ fun ArtSpaceApp() {
         )
     }
     var currentStep by remember { mutableIntStateOf(1) }
-
     var isSHowingArtistProfile by remember { mutableStateOf(false) }
 
-    val currentAtWork = artworks[currentStep - 1]
-    //Menampilkan Biografi Pelukis
-    if (isSHowingArtistProfile) {
+    var searchQuery by remember { mutableStateOf("") }
+    var isSearchError by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
-        ArtistProfileScreen(
-            artistName1 = stringResource(currentAtWork.artistRest),
-            artistBio1 = stringResource(currentAtWork.artistBioRes),
-            onBackClick = { isSHowingArtistProfile = false }
-        )
-    } else {
-        AnimatedContent(
-            targetState = currentStep,
-            label = "ArtAnimation",
-            transitionSpec = {
-                if (targetState > initialState) {
-                    // Animasi MAJU (Next): Masuk dari Kanan, Keluar ke Kiri
-                    (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
-                        slideOutHorizontally { width -> -width } + fadeOut()
+    Column (
+        modifier = Modifier.fillMaxSize()
+    ){
+        if (!isSHowingArtistProfile){
+            Surface(
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp, top = 15.dp)
+            ){
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = {query ->
+                        searchQuery = query
+                        isSearchError = false
+
+                        if (query.isNotEmpty()){
+                            val fountArtWork = artworks.find { artWork ->
+                                val tittle1 = context.getString(artWork.titleRes)
+                                val artist1 = context.getString(artWork.artistRest)
+                                tittle1.contains(query, ignoreCase = true) ||
+                                        artist1.contains(query, ignoreCase = true)
+                            }
+                            if (fountArtWork != null){
+                                currentStep = fountArtWork.id
+                            } else {
+                                isSearchError = true
+                            }
+                        }
+                    },label = { Text("Cari Lukisan (Contoh: Mona)") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Default.Close, contentDescription = "Clear")
+                            }
+                        }
+                    },
+                    isError = isSearchError,
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent
                     )
-                } else {
-                    // Animasi MUNDUR (Prev): Masuk dari Kiri, Keluar ke Kanan
-                    (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
-                        slideOutHorizontally { width -> width } + fadeOut()
+                )
+            }
+        }
+
+        Column (
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.Top // <-- TAMBAHKAN BARIS INI
+        ) {
+            val currentAtWork = artworks[currentStep - 1]
+            //Menampilkan Biografi Pelukis
+            if (isSHowingArtistProfile) {
+
+                ArtistProfileScreen(
+                    artistName1 = stringResource(currentAtWork.artistRest),
+                    artistBio1 = stringResource(currentAtWork.artistBioRes),
+                    onBackClick = { isSHowingArtistProfile = false }
+                )
+            } else {
+                AnimatedContent(
+                    targetState = currentStep,
+                    label = "ArtAnimation",
+                    transitionSpec = {
+                        if (targetState > initialState) {
+                            // Animasi MAJU (Next): Masuk dari Kanan, Keluar ke Kiri
+                            (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
+                                slideOutHorizontally { width -> -width } + fadeOut()
+                            )
+                        } else {
+                            // Animasi MUNDUR (Prev): Masuk dari Kiri, Keluar ke Kanan
+                            (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
+                                slideOutHorizontally { width -> width } + fadeOut()
+                            )
+                        }
+                    }
+                ){ targetStep ->
+                    val targetArtwork = artworks[targetStep - 1]
+
+                    ArtStatis(
+                        imageRes = targetArtwork.imageRes,
+                        tittle1 = stringResource(targetArtwork.titleRes),
+                        artist1 = stringResource(targetArtwork.artistRest),
+                        year1 = stringResource(targetArtwork.yearRes),
+                        genre1 = stringResource(targetArtwork.genreRes),
+                        description1 = stringResource(targetArtwork.descriptionRes),
+                        currentStep = targetStep,
+                        totalSteps = artworks.size,
+                        onPrevClick = {
+                            if (currentStep == 1) {
+                                currentStep = 4
+                            } else {
+                                currentStep--
+                            }
+                        },
+                        onNextClick = {
+                            if (currentStep == 4) {
+                                currentStep = 1
+                            } else {
+                                currentStep++
+                            }
+                        },
+                        onArtistCLick = {isSHowingArtistProfile = true}
                     )
                 }
             }
-        ){ targetStep ->
-            val targetArtwork = artworks[targetStep - 1]
-
-            ArtStatis(
-                imageRes = targetArtwork.imageRes,
-                tittle1 = stringResource(targetArtwork.titleRes),
-                artist1 = stringResource(targetArtwork.artistRest),
-                year1 = stringResource(targetArtwork.yearRes),
-                genre1 = stringResource(targetArtwork.genreRes),
-                description1 = stringResource(targetArtwork.descriptionRes),
-                onPrevClick = {
-                    if (currentStep == 1) {
-                        currentStep = 4
-                    } else {
-                        currentStep--
-                    }
-                },
-                onNextClick = {
-                    if (currentStep == 4) {
-                        currentStep = 1
-                    } else {
-                        currentStep++
-                    }
-                },
-                onArtistCLick = {isSHowingArtistProfile = true}
-            )
         }
     }
 }
@@ -235,6 +318,8 @@ fun ArtStatis(
     year1: String,
     genre1: String,
     description1: String,
+    currentStep: Int,
+    totalSteps: Int,
     onPrevClick: () -> Unit,
     onNextClick: () -> Unit,
     onArtistCLick: () -> Unit,
@@ -242,6 +327,9 @@ fun ArtStatis(
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val customFont = FontFamily(Font(R.font.cinzel_black))
+    val context = LocalContext.current
+    val tts = remember { TextToSpeech(context, null) }
 
     if (isLandscape){
         Row(
@@ -266,16 +354,15 @@ fun ArtStatis(
                         .fillMaxSize()
                         .padding(16.dp)
                 ){
-                    Image(
-                        painter = painterResource(imageRes),
+                    ZoomableImage(
+                        imageRes = imageRes,
                         contentDescription = tittle1,
-                        contentScale = androidx.compose.ui.layout.ContentScale.Fit,
-                        modifier = Modifier
-                            .fillMaxSize()
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
 
             }
+
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -292,14 +379,17 @@ fun ArtStatis(
                         )
                         .padding(16.dp)
                 ) {
-                    val customFont = FontFamily(Font(R.font.cinzel_black))
+
 
                     Text(text = tittle1,
                         fontSize = 22.sp,
                         fontFamily = customFont,
                         fontWeight = FontWeight.W300)
                     Text(text = genre1, fontSize = 14.sp, fontStyle = FontStyle.Italic, color = Color.Gray)
-                    Row {
+
+                    Row (
+                        verticalAlignment = Alignment.CenterVertically
+                    ){
                         Text(
                             text = artist1,
                             fontWeight = FontWeight.Bold,
@@ -307,11 +397,51 @@ fun ArtStatis(
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.clickable { onArtistCLick() }
                         )
-                        Text(text = " $year1", fontSize = 16.sp, fontWeight = FontWeight.Thin)
+
+                        Text(text = " $year1",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Thin
+                        )
+
+                        IconButton(onClick = {
+                            tts.speak(description1, TextToSpeech.QUEUE_FLUSH, null, null)
+                        }) {
+                            Icon(
+                                Icons.Default.PlayArrow, contentDescription = "Baca Deskripsi"
+                            )
+                        }
+
+                        IconButton(
+                            onClick = {
+                                val sendIntent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+
+                                    putExtra(Intent.EXTRA_TEXT, "Lihat Lukisan keren ini: \"$tittle1\" karya $artist1. \n\n$description1")
+                                    type = "text/plain"
+                                }
+                                val shareIntent = Intent.createChooser(sendIntent, "Bagikan lukisan via...")
+                                context.startActivity(shareIntent)
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "Share Lukisan",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(text = description1, fontSize = 14.sp, lineHeight = 20.sp, textAlign = TextAlign.Justify)
+
+                    Text(text = description1,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        textAlign = TextAlign.Justify
+                    )
                 }
+                Spacer(modifier = Modifier.height(16.dp))
+
+                PageIndicator(totalSteps = totalSteps, currentStep =currentStep)
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -342,7 +472,7 @@ fun ArtStatis(
                 .fillMaxSize()
                 .padding(20.dp)
                 .safeDrawingPadding(),
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Surface(
@@ -351,19 +481,26 @@ fun ArtStatis(
                 modifier = Modifier.padding(16.dp),
                 color = Color.White
             ) {
-                Image(
-                    painter = painterResource(imageRes),
-                    contentDescription = tittle1,
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop, // Agar gambar rapi
-                    modifier = Modifier // Gunakan Modifier (Baru)
+                Box(
+                    modifier = Modifier
                         .fillMaxWidth()
-                        .height(400.dp)
+                        .height(350.dp) // Tinggi area gambar
                         .background(MaterialTheme.colorScheme.surface)
                         .padding(24.dp)
-                )
+                ) {
+                    // --- GANTI IMAGE LAMA DENGAN ZOOMABLE IMAGE ---
+                    ZoomableImage(
+                        imageRes = imageRes,
+                        contentDescription = tittle1,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            PageIndicator(totalSteps = totalSteps, currentStep = currentStep)
+
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Column(
                 modifier = Modifier
@@ -378,7 +515,6 @@ fun ArtStatis(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.Start
             ) {
-                val customFont = FontFamily(Font(R.font.cinzel_black))
                 Text(
                     text = tittle1,
                     fontFamily = customFont,
@@ -393,7 +529,10 @@ fun ArtStatis(
                     modifier = Modifier
                         .padding(bottom = 8.dp)
                 )
-                Row {
+
+                Row (
+                    verticalAlignment = Alignment.CenterVertically
+                ){
                     Text(
                         text = artist1,
                         fontWeight = FontWeight.Bold,
@@ -401,11 +540,41 @@ fun ArtStatis(
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.clickable{onArtistCLick()}
                     )
+
                     Text(
                         text = " $year1",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Thin
                     )
+
+                    IconButton(onClick = {
+                        tts.speak(description1, TextToSpeech.QUEUE_FLUSH, null, null)
+                    }) {
+                        Icon(
+                            Icons.Default.PlayArrow, contentDescription = "Baca Deskripsi",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    IconButton(
+                        onClick = {
+                            val sendIntent = Intent().apply {
+                                action = Intent.ACTION_SEND
+
+                                putExtra(Intent.EXTRA_TEXT, "Lihat Lukisan keren ini: \"$tittle1\" karya $artist1. \n\n$description1")
+                                type = "text/plain"
+                            }
+                            val shareIntent = Intent.createChooser(sendIntent, "Bagikan lukisan via...")
+                            context.startActivity(shareIntent)
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Share Lukisan",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -417,6 +586,8 @@ fun ArtStatis(
                     textAlign = TextAlign.Justify,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -517,6 +688,86 @@ fun ArtistProfileScreen (
 
 }
 
+@Composable
+fun ZoomableImage(
+    imageRes: Int,
+    contentDescription: String,
+    modifier: Modifier = Modifier
+) {
+    // State untuk skala zoom dan posisi geser
+    var scale by remember { mutableFloatStateOf(1f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
+
+    Box(
+        modifier = modifier
+            .clip(RectangleShape) // Agar gambar tidak keluar dari kotaknya saat di-zoom
+            .pointerInput(Unit) {
+                detectTransformGestures { _, pan, zoom, _ ->
+                    // 1. Hitung Zoom
+                    scale *= zoom
+                    // Batasi zoom minimal 1x (normal) dan maksimal 4x
+                    scale = scale.coerceIn(1f, 4f)
+
+                    // 2. Hitung Geser (Pan)
+                    // Geser hanya aktif jika gambar sedang diperbesar (scale > 1)
+                    if (scale > 1f) {
+                        val newOffset = offset + pan
+                        // Kita bisa tambahkan logika batas geser disini,
+                        // tapi untuk simpelnya kita biarkan bebas dulu selama di-zoom
+                        offset = newOffset
+                    } else {
+                        // Jika kembali ke ukuran normal, reset posisi ke tengah
+                        offset = Offset.Zero
+                    }
+                }
+            }
+    ) {
+        Image(
+            painter = painterResource(imageRes),
+            contentDescription = contentDescription,
+            contentScale = androidx.compose.ui.layout.ContentScale.Fit, // Gunakan Fit agar proporsional
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer(
+                    scaleX = scale,
+                    scaleY = scale,
+                    translationX = offset.x,
+                    translationY = offset.y
+                )
+        )
+    }
+}
+
+@Composable
+fun PageIndicator(
+    totalSteps: Int,
+    currentStep: Int,
+    modifier: Modifier = Modifier
+){
+    Row (
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp)
+    ){
+        repeat(totalSteps) {index ->
+            val isActive = (index + 1) == currentStep
+
+            val color = if (isActive) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.5f)
+            val size = if (isActive) 12.dp else 8.dp
+
+            Box (
+                modifier = Modifier
+                    .padding(4.dp)
+                    .size(size)
+                    .clip(shape = CircleShape)
+                    .background(color)
+            ){}
+        }
+    }
+}
+
 
 @Preview(showBackground = true)
 @Composable
@@ -529,6 +780,8 @@ fun ArtSpacePreview() {
             year1 = "(1893)",
             genre1 = "Ekspresionisme",
             description1 = "The Scream karya Edvard Munch adalah representasi visual dari kecemasan eksistensial, ketakutan, dan kegelisahan jiwa manusia modern saat menghadapi krisis, terinspirasi dari pengalaman pribadi Munch saat ia merasa \"jeritan alam\" yang tak terbatas melalui langit merah darah yang dramatis setelah letusan Gunung Krakatau. Sosoknya yang terdistorsi menutup telinga, menunjukkan isolasi dan kepanikan, menjadikannya simbol universal dari perasaan manusia yang paling mendalam, bukan sekadar gambaran fisik, tapi emosi yang meluap.",
+            currentStep = 1,
+            totalSteps = 4,
             onPrevClick = {},
             onNextClick = {},
             onArtistCLick = {}
